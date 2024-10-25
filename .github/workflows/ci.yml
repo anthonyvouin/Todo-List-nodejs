@@ -18,4 +18,10 @@ jobs:
       - name: "Install deps"
         run:  |
           node -v
-          npm install 
+          npm ci
+
+      - name : "build"
+        run:  echo "Project build"
+
+      - name: "Test"
+        run:  npm run test
