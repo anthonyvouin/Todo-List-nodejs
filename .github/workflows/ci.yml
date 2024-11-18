@@ -1,31 +1,26 @@
+name: CI
+
 on:
   push: ~
-  workflow_dispatch: ~
 
 jobs:
-  init:
-    name: "Say hello"
+  prepare:
+    name: "Prepare environment"
+    runs-on: ubuntu-latest
+    outputs:
+      build_version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Set up environment
+        run: echo "Setup complete"
+
+      - name: Generate build version
+        id: set_version
+        run: echo "::set-output name=version::1.0.0"
+
+  build:
+    needs: prepare
+    name: "Build project"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: "Setup node"
-        uses: actions/setup-node@v4
-        with:
-          node-version: latest
-
-      - name: "Install deps"
-        run:  |
-          node -v
-          npm ci
-
-      - name : "build"
-        run:  echo "Project build"
-
-      - name: "Test"
-        run:  npm run test
-        continue-on-error: true
-
-      - name: "Notify"
-        run:  echo "CI OK"
+      - name: Use build version
+        run: echo "Building version ${{ needs.prepare.outputs.build_version }}"
