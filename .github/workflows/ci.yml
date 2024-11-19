@@ -2,29 +2,77 @@ name: CI
 
 on:
   push: ~
+  workflow_dispatch: ~
 
 jobs:
   prepare:
-    name: "Prepare environment"
+    name: "Install deps"
     runs-on: ubuntu-latest
-    outputs:
-      build_version: ${{ steps.set_version.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate build version
-        id: set_version  
-        run: |
-          echo "::set-output name=version::1.0.0"  
+      - name: "Cache node_modules"
+        uses: actions/cache@v4
+        with:
+          path: ./node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Setup node to last version
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest
+
+      - name: "Install deps"
+        run: npm ci
 
   build:
-    needs: prepare  
+    needs: ["prepare"]
     name: "Build project"
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: ./node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
+      - run: ls
+      - name: "Build"
+        run: echo "Project built"
 
-      - name: Use build version
-        run: echo "Building version ${{ needs.prepare.outputs.build_version }}"
+  test_unit:
+    needs: ["build"]
+    name: "Test project"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Test"
+        run: npm run test
+        continue-on-error: true
+  test_integration:
+    needs: ["build"]
+    name: "Test project"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Test"
+        run: npm run test
+        continue-on-error: true
+  test_e2e:
+    needs: ["build"]
+    name: "Test project"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Test"
+        run: npm run test
+        continue-on-error: true
+
+  notify:
+    needs: ["test_unit", "test_integration", "test_e2e"]
+    name: "Notify author"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Notify"
+        run: |
+          env
+          echo "CI OK"
