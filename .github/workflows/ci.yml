@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  push:
-  workflow_dispatch:
+  push: ~
+  workflow_dispatch: ~
 
 jobs:
   prepare:
@@ -15,8 +15,8 @@ jobs:
       - name: "Cache node_modules"
         uses: actions/cache@v4
         with:
-          path: ./Todo-List-nodejs/node_modules
-          key: node_modules-${{ hashFiles('Todo-List-nodejs/package-lock.json') }}
+          path: ./node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
 
       - name: Setup node to last version
         uses: actions/setup-node@v4
@@ -24,7 +24,6 @@ jobs:
           node-version: latest
 
       - name: "Install deps"
-        working-directory: ./Todo-List-nodejs
         run: npm ci
 
   build:
@@ -37,25 +36,63 @@ jobs:
       - name: Restore node_modules
         uses: actions/cache/restore@v4
         with:
-          path: ./Todo-List-nodejs/node_modules
-          key: node_modules-${{ hashFiles('Todo-List-nodejs/package-lock.json') }}
-      - run: ls
+          path: ./node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
       - name: "Build"
-        working-directory: ./Todo-List-nodejs
         run: echo "Project built"
 
-  test_jest:
+  test_unit:
     needs: ["build"]
-    name: "Test project"
+    name: "UNIT Test project"
     runs-on: "ubuntu-latest"
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: ./node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
       - name: "Test"
-        working-directory: ./Todo-List-nodejs
-        run: npm run test
+        run: npm run test:unit
+
+  test_integration:
+    needs: ["build"]
+    name: "INTEGRATION Test project"
+    runs-on: "ubuntu-latest"
+    services:
+      database:
+        image: mongo
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: example
+        ports:
+          - 27017:27017
+    steps:
+      - name: "Check database healthy"
+        run: nc -vz localhost 27017
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: ./node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
+      - name: "Test"
+        run: npm run test -- --selectProjects integration-test
         continue-on-error: true
- 
+
+  test_e2e:
+    needs: ["build"]
+    name: "E2E Test project"
+    runs-on: "ubuntu-latest"
+    continue-on-error: true
+    steps:
+      - name: "Test"
+        run: npm run test:e2e
+
   notify:
-    needs: ["test_jest"]
+    needs: ["test_unit", "test_integration", "test_e2e"]
     name: "Notify author"
     runs-on: "ubuntu-latest"
     steps:
