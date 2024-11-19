@@ -42,7 +42,7 @@ jobs:
       - name: "Build"
         run: echo "Project built"
 
-  test_unit:
+  test_jest:
     needs: ["build"]
     name: "Test project"
     runs-on: "ubuntu-latest"
@@ -50,25 +50,11 @@ jobs:
       - name: "Test"
         run: npm run test
         continue-on-error: true
-  test_integration:
-    needs: ["build"]
-    name: "Test project"
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Test"
-        run: npm run test
-        continue-on-error: true
-  test_e2e:
-    needs: ["build"]
-    name: "Test project"
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: "Test"
-        run: npm run test
-        continue-on-error: true
+ 
+  
 
   notify:
-    needs: ["test_unit", "test_integration", "test_e2e"]
+    needs: ["test_jest", ]
     name: "Notify author"
     runs-on: "ubuntu-latest"
     steps:
