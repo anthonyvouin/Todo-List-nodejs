@@ -1,8 +1,8 @@
 name: CI
 
 on:
-  push: ~
-  workflow_dispatch: ~
+  push:
+  workflow_dispatch:
 
 jobs:
   prepare:
@@ -15,8 +15,8 @@ jobs:
       - name: "Cache node_modules"
         uses: actions/cache@v4
         with:
-          path: ./node_modules
-          key: node_modules-${{ hashFiles('package-lock.json') }}
+          path: ./Todo-List-nodejs/node_modules
+          key: node_modules-${{ hashFiles('Todo-List-nodejs/package-lock.json') }}
 
       - name: Setup node to last version
         uses: actions/setup-node@v4
@@ -24,6 +24,7 @@ jobs:
           node-version: latest
 
       - name: "Install deps"
+        working-directory: ./Todo-List-nodejs
         run: npm ci
 
   build:
@@ -36,10 +37,11 @@ jobs:
       - name: Restore node_modules
         uses: actions/cache/restore@v4
         with:
-          path: ./node_modules
-          key: node_modules-${{ hashFiles('package-lock.json') }}
+          path: ./Todo-List-nodejs/node_modules
+          key: node_modules-${{ hashFiles('Todo-List-nodejs/package-lock.json') }}
       - run: ls
       - name: "Build"
+        working-directory: ./Todo-List-nodejs
         run: echo "Project built"
 
   test_jest:
@@ -48,13 +50,12 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: "Test"
+        working-directory: ./Todo-List-nodejs
         run: npm run test
         continue-on-error: true
  
-  
-
   notify:
-    needs: ["test_jest", ]
+    needs: ["test_jest"]
     name: "Notify author"
     runs-on: "ubuntu-latest"
     steps:
